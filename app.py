@@ -1,26 +1,26 @@
-# =========================
-# 🔧 CONFIGURAÇÕES (config.py)
-# =========================
-NUVEMSHOP_CLIENT_ID = "SEU_CLIENT_ID"
-NUVEMSHOP_CLIENT_SECRET = "SEU_CLIENT_SECRET"
-NUVEMSHOP_REDIRECT_URI = "https://SEUSITE.com.br/oauth/callback"
-
-FACEBOOK_APP_ID = "SEU_FACEBOOK_APP_ID"
-FACEBOOK_APP_SECRET = "SEU_FACEBOOK_APP_SECRET"
-FACEBOOK_PAGE_ID = "SUA_PAGE_ID"
-FACEBOOK_ACCESS_TOKEN = "SEU_TOKEN_DE_PAGINA"
-
-# =========================
-# 🚀 IMPORTAÇÕES
-# =========================
-from flask import Flask, request
+from flask import Flask, request, redirect
 import requests
 
 app = Flask(__name__)
 
-# =========================
-# 🔐 AUTENTICAÇÃO NUVEMSHOP (nuvemshop.py)
-# =========================
+# 🔧 CONFIGURAÇÕES
+NUVEMSHOP_CLIENT_ID = "22395"
+NUVEMSHOP_CLIENT_SECRET = "d92860c7e62e4c3b129e32eac27d7844f4107eb7e787f553"
+NUVEMSHOP_REDIRECT_URI = "https://autopost-nuvemshop.up.railway.app/oauth/callback"
+
+FACEBOOK_PAGE_ID = "105809162380078"
+FACEBOOK_ACCESS_TOKEN = (
+    "EAA7sfnzxQ6QBPuLP7pBzg75e67zxSkLiBsOklZCpznDpFketMxVM4tJcikpHvgFMmMZBfOLATIJKhMIVruLRSzMQiqgIjhcLZBiyEawZAKDI4RJJ4zJNS28tJsis3TQZByEyHOFKi63RyI0SL4goKIyn9mvDZAZANnuWdEZAdFqEDmywNEyRPXPfe6Aq7jSJVAZDZD"
+)
+
+# 🔐 ROTA DE AUTORIZAÇÃO
+@app.route("/auth")
+def auth():
+    return redirect(
+        f"https://www.nuvemshop.com.br/apps/authorize?client_id={NUVEMSHOP_CLIENT_ID}&redirect_uri={NUVEMSHOP_REDIRECT_URI}&response_type=code"
+    )
+
+# 🔐 CALLBACK COM O CODE
 @app.route("/oauth/callback")
 def oauth_callback():
     code = request.args.get("code")
@@ -36,58 +36,3 @@ def oauth_callback():
     access_token = response.json().get("access_token")
     return f"✅ Token recebido com sucesso: {access_token}"
 
-# =========================
-# 📦 PUBLICAÇÃO NO FACEBOOK (facebook.py)
-# =========================
-def post_product_to_facebook(title, image_url, link):
-    url = f"https://graph.facebook.com/{FACEBOOK_PAGE_ID}/photos"
-    payload = {
-        "url": image_url,
-        "caption": f"{title}\nCompre agora: {link}",
-        "access_token": FACEBOOK_ACCESS_TOKEN
-    }
-    response = requests.post(url, data=payload)
-    return response.json()
-
-# =========================
-# 📬 WEBHOOKS LGPD E PRODUTOS (webhook.py)
-# =========================
-@app.route("/webhook/customers-created", methods=["POST"])
-def handle_customer_created():
-    data = request.json
-    print("👤 Novo cliente criado:", data)
-    return "OK", 200
-
-@app.route("/webhook/customers-data-request", methods=["POST"])
-def handle_data_request():
-    data = request.json
-    print("📄 Solicitação LGPD:", data)
-    return "OK", 200
-
-@app.route("/webhook/product-created", methods=["POST"])
-def handle_product_created():
-    data = request.json
-    title = data.get("name")
-    image_url = data.get("images", [{}])[0].get("src")
-    link = data.get("url")
-    if title and image_url and link:
-        result = post_product_to_facebook(title, image_url, link)
-        print("📢 Produto publicado:", result)
-        return "Publicado com sucesso", 200
-    else:
-        return "Dados incompletos", 400
-
-# =========================
-# 🏠 ROTA PRINCIPAL
-# =========================
-@app.route("/")
-def home():
-    return "🚀 Bot de Postagem Automática Nuvemshop + Facebook está rodando!"
-
-# =========================
-# ▶️ EXECUÇÃO LOCAL
-# =========================
-#if __name__ == "__main__":
-
- #   app.run(host="0.0.0.0", port=5000, debug=True)
-#
